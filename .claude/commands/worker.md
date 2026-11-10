@@ -1,1 +1,1 @@
-../../prompts/worker.md
+../../../../.claude/commands/worker.md
