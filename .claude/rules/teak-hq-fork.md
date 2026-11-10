@@ -23,8 +23,9 @@ touch the installed roost, the shared ergo, or the shared dispatcher.
   `git worktree add -b <branch> tooling/roost-<branch, slashes as dashes> upstream/main`. In that tree run
   `script/set_worktree_identity tooling/roost <tree>` and `bun install`. It has none of the symlinks, so
   no teak-hq paths, issue IDs, or conventions can leak in. Fresh commits, roost format. Push the branch to
-  the fork (plain push) and open it with `gh pr create --repo AvesAlight/roost --head GoCarrot:<branch>`.
-  Never force-push.
+  the fork and open it with `gh pr create --repo AvesAlight/roost --head GoCarrot:<branch>`. A tree cut
+  from `upstream/main` tracks upstream, so a bare `git push` would aim there: push with an explicit
+  refspec and `-u origin` (`git push -u origin <branch>:<branch>`). Never force-push.
 - Fork sync: when an upstream PR merges, `git fetch upstream`, merge `upstream/main` into a branch off fork
   main, and PR it to fork main as a merge commit. Never force-push. If upstream touched `script/worktree`
   (it does, about monthly), `.claude/agents`, or `.claude/commands/worker.md`, keep the fork's side.
