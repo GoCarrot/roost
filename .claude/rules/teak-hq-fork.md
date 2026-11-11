@@ -29,3 +29,15 @@ touch the installed roost, the shared ergo, or the shared dispatcher.
 - Fork sync: when an upstream PR merges, `git fetch upstream`, merge `upstream/main` into a branch off fork
   main, and PR it to fork main as a merge commit. Never force-push. If upstream touched `script/worktree`
   (it does, about monthly), `.claude/agents`, or `.claude/commands/worker.md`, keep the fork's side.
+
+## Spawning teak-coord
+
+teak-coord is a long-running agent, so it follows the PM-class flags in `roost spawn --help` ("Agent class guidance"):
+
+```bash
+roost spawn teak-coord --agent teak-coord --cache-ttl 1h --steer-compact \
+  --channels '#teak-coord,#sdk-planning,#teak-heavy' \
+  --ask-irc '#teak-coord' --ask-target alex
+```
+
+The agent definition is `.claude/agents/teak-coord.md` in teak-hq. It doesn't carry its own spawn command.
