@@ -40,4 +40,4 @@ roost spawn teak-coord --agent teak-coord --cache-ttl 1h --steer-compact \
   --ask-irc '#teak-coord' --ask-target alex
 ```
 
-The agent definition is `.claude/agents/teak-coord.md` in teak-hq. It doesn't carry its own spawn command.
+The agent definition is `.claude/agents/teak-coord.md` in teak-hq, and `--agent` resolves against the cwd's `.claude/agents/`. Run the recipe from a teak-hq checkout that has the file merged, or pass `--cwd` pointing at one.
