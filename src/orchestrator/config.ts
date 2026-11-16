@@ -3,6 +3,7 @@ import { join } from 'node:path'
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 import { exclusiveCreate } from '../fs-lock.js'
+import type { PluginConfig } from './plugin.js'
 
 const execFileP = promisify(execFile)
 
@@ -15,10 +16,7 @@ export interface WatchedEntry {
   channels?: string[]
 }
 
-export interface OrchestratorConfig {
-  // See src/orchestrator/naming.ts for shape + fallback rules.
-  project?: string
-  repo?: string
+export interface OrchestratorConfig extends PluginConfig {
   agent_logins?: string[]
   irc?: {
     nick?: string
@@ -166,6 +164,44 @@ export async function loadState(stateDir: string): Promise<OrchestratorState | n
 
 export async function writeState(stateDir: string, state: OrchestratorState): Promise<void> {
   await writeAtomicJson(stateDir, 'state.json', state)
+}
+
+// Messages the dispatcher couldn't post (target channel not joined). state.json
+// advances past an event once it's derived, so this file is the only copy.
+// Retried each tick in queue order. One entry per plugin message per channel.
+export interface OutboxEntry {
+  channel: string
+  text: string
+  queued_at: string
+}
+
+// An unreadable outbox is moved aside and treated as empty. Throwing here
+// would stall every tick until someone deleted the file.
+export async function loadOutbox(stateDir: string, log: (msg: string) => void = m => process.stderr.write(m)): Promise<OutboxEntry[]> {
+  const path = join(stateDir, 'outbox.json')
+  const file = Bun.file(path)
+  if (!(await file.exists())) return []
+  const text = (await file.text()).trim()
+  if (!text) return []
+  try {
+    const parsed = JSON.parse(text) as { entries?: unknown }
+    if (!Array.isArray(parsed.entries)) throw new Error('no entries array')
+    return parsed.entries.filter((e): e is OutboxEntry =>
+      typeof e?.channel === 'string' && typeof e?.text === 'string' && typeof e?.queued_at === 'string')
+  } catch (e) {
+    const aside = `${path}.corrupt-${Date.now()}`
+    try { await rename(path, aside) } catch { /* next tick retries the move */ }
+    log(`orchestrator: outbox.json unreadable (${e}), moved to ${aside}; its queued messages are not retried\n`)
+    return []
+  }
+}
+
+export async function writeOutbox(stateDir: string, entries: OutboxEntry[]): Promise<void> {
+  if (!entries.length) {
+    try { await unlink(join(stateDir, 'outbox.json')) } catch { /* ignore if missing */ }
+    return
+  }
+  await writeAtomicJson(stateDir, 'outbox.json', { entries })
 }
 
 // `bin/roost init` and tests write config.json directly — dispatcher mutations
