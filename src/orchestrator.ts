@@ -140,8 +140,10 @@ export async function runOneTick(
   // for the tick: a thrown plugin preserves its prevState, emits no messages,
   // and is logged; siblings still dispatch. Mirrors bootChannels' per-plugin
   // try/catch. A crashed plugin's config-static channels are still reconciled
-  // via desiredChannels (in bootChannels); only its scraped-dynamic channels
-  // for this tick are lost, which is moot since it couldn't scrape.
+  // via desiredChannels (in bootChannels). Its scraped-dynamic channels carry
+  // over from its last good run when a schedule is passed; without one (the
+  // one-shot modes) they are lost for the tick, which is moot since it
+  // couldn't scrape.
   const results = await Promise.all(
     plugins.map(async (plugin): Promise<{ plugin: Plugin; result: PluginTickResult }> => {
       const prevState = getPluginState<unknown>(prev, plugin.name)
